@@ -38,7 +38,14 @@
             transition: background-color 0.3s ease;
         }
 
-        #generate-button {
+        #generate-new-playlist-button {
+            background-color: #333; /* Dark background for major action */
+            color: white;
+            font-size: 16px;
+            padding: 12px 25px;
+        }
+        
+        #generate-new-cards-button {
             background-color: #eee;
             font-size: 16px;
             padding: 12px 25px;
@@ -221,11 +228,12 @@
 <body>
     <header>
         <h1>🎶 Main Mix Bingo Generator (6 Cards, $4 \times 4$)</h1>
-        <p>Click the button below to generate a new round of 6 unique cards from the complete song mix.</p>
+        <p>Choose your action:</p>
     </header>
 
     <div class="controls">
-        <button id="generate-button">Generate New Cards & Playlist</button>
+        <button id="generate-new-playlist-button">🔄 New Playlist & New Cards</button>
+        <button id="generate-new-cards-button">🎲 New Cards (Same Playlist)</button>
         <button onclick="window.print()">🖨️ Print Cards</button>
     </div>
 
@@ -239,7 +247,7 @@
     </section>
 
     <script>
-        // --- EMBEDDED SONG LIST (This is the single 'Main Mix') ---
+        // --- EMBEDDED SONG LIST (The Main Mix) ---
         const RAW_SONG_LIST = [
             "Baby One More Time - Britney Spears", "867-5309 / Jenny - Tommy Tutone",
             "9 to 5 - Dolly Parton", "Africa - Toto", "Ain't No Mountain High Enough - Marvin Gaye & Tammi Terrell",
@@ -317,7 +325,7 @@
             "Sweet Emotion - Aerosmith", "Gimme Shelter - The Rolling Stones", "Paint It Black - The Rolling Stones",
             "Iron Man - Black Sabbath", "Sultans of Swing - Dire Straits", "The Chain - Fleetwood Mac",
             "Living After Midnight - Judas Priest", "Master of Puppets - Metallica", "The Final Countdown - Europe",
-            "Still Loving You - Scorpions", "You Oughta Know - Alanis Morissette",
+            "Still Loving You - Scorpions", "You Oughta Know - Alanis Morisette",
             "Good Riddance (Time of Your Life) - Green Day", "All the Small Things - blink-182",
             "Dani California - Red Hot Chili Peppers", "In the End - Linkin Park", "Chop Suey! - System of a Down",
             "The Pretender - Foo Fighters", "Welcome to the Black Parade - My Chemical Romance",
@@ -348,15 +356,16 @@
             "American Pie - Don McLean", "Heart of Glass - Blondie"
         ];
         
-        // Removed SONG_DATA and processSongList as they are no longer needed
-        
+        let currentMasterPlaylist = []; // Holds the song objects selected for the current round.
+
         // --- Configuration for 4x4 Bingo Cards ---
-        const CARD_COUNT = 6; // Fixed number of cards as requested
-        const CARD_SIZE = 15; // Number of unique songs required on the card (15 songs + 1 free space = 16 cells)
-        const FREE_SPACE_INDEX = 7; // Center of a 4x4 grid (0-indexed: index 7 is 8th cell)
+        const CARD_COUNT = 6; 
+        const CARD_SIZE = 15; // 15 songs + 1 free space = 16 cells
+        const FREE_SPACE_INDEX = 7; 
+        const REQUIRED_SONGS = CARD_SIZE * CARD_COUNT;
 
         /*
-         * --- BINGO GENERATION FUNCTIONS (Simplified) ---
+         * --- UTILITY FUNCTIONS ---
          */
 
         function shuffleArray(array) {
@@ -367,10 +376,6 @@
             return array;
         }
 
-        /**
-         * Converts the RAW_SONG_LIST into the structured format required by the generator.
-         * Since there are no categories, it just flattens the list.
-         */
         function getMainMix() {
             return RAW_SONG_LIST.map(item => {
                 const parts = item.split(' - ');
@@ -383,35 +388,53 @@
                 };
             });
         }
+        
+        function clearOutputs() {
+            document.getElementById('card-container').innerHTML = '';
+            document.getElementById('playlist-output').innerHTML = '';
+        }
 
-        function generateBingoCards() {
-            const availableSongs = getMainMix();
-            
-            // Safety Check: Needs enough songs (CARD_SIZE * CARD_COUNT)
-            const requiredSongs = CARD_SIZE * CARD_COUNT;
-            
-            if (availableSongs.length < requiredSongs) {
-                alert(`Error: The main mix only has ${availableSongs.length} unique songs, but you need ${requiredSongs} to generate ${CARD_COUNT} unique 4x4 cards. Please add more songs to the RAW_SONG_LIST.`);
-                return;
+        function checkSafety(availableSongs) {
+            if (availableSongs.length < REQUIRED_SONGS) {
+                alert(`Error: The mix only has ${availableSongs.length} unique songs, but you need ${REQUIRED_SONGS} to generate ${CARD_COUNT} unique 4x4 cards. Please add more songs to the RAW_SONG_LIST.`);
+                return false;
             }
+            return true;
+        }
+
+        /*
+         * --- CORE GENERATION FUNCTION ---
+         */
+
+        /**
+         * Generates the cards based on a pre-selected set of songs (the currentMasterPlaylist).
+         */
+        function renderBingoCards() {
+            if (!checkSafety(getMainMix())) return;
             
-            const cardContainer = document.getElementById('card-container');
+            clearOutputs();
+
+            // 1. Get the songs selected for the current round (which should be stored in currentMasterPlaylist)
+            const songsOnCards = currentMasterPlaylist;
+            
+            // 2. Output the Master Playlist (shuffled for play order)
             const playlistOutput = document.getElementById('playlist-output');
-            cardContainer.innerHTML = '';
-            playlistOutput.innerHTML = '';
+            const masterPlaylistShuffled = shuffleArray([...songsOnCards]); // Clone and shuffle for calling order
 
-            // 1. Shuffle and slice the exact number of unique songs needed for all 6 cards
-            const shuffledSongs = shuffleArray([...availableSongs]);
-            const songsOnCards = shuffledSongs.slice(0, requiredSongs); 
+            masterPlaylistShuffled.forEach(song => {
+                const listItem = document.createElement('li');
+                listItem.textContent = song.full_name;
+                playlistOutput.appendChild(listItem);
+            });
 
-            // 2. The master playlist is simply the set of songs chosen for the cards, then shuffled.
-            const masterPlaylist = shuffleArray([...songsOnCards]);
+            const cardContainer = document.getElementById('card-container');
 
             for (let i = 0; i < CARD_COUNT; i++) {
                 // 3. Take the unique slice for this specific card
                 const start = i * CARD_SIZE;
                 const end = (i + 1) * CARD_SIZE;
                 
+                // Get the songs unique to this card's segment
                 const cardSongsSegment = songsOnCards.slice(start, end); 
 
                 // 4. Randomize the song positions *within* this card's set
@@ -425,7 +448,7 @@
                 
                 const title = document.createElement('div');
                 title.className = 'card-title';
-                title.textContent = `MAIN MIX BINGO CARD #${i + 1}`; // Fixed title
+                title.textContent = `MAIN MIX BINGO CARD #${i + 1}`; 
                 card.appendChild(title);
 
                 const grid = document.createElement('div');
@@ -434,7 +457,7 @@
                 cardSongs.forEach(song => {
                     const cell = document.createElement('div');
                     cell.className = 'card-cell';
-                    cell.textContent = song.isFree ? song.full_name : song.full_name; 
+                    cell.textContent = song.full_name; 
                     if (song.isFree) {
                         cell.classList.add('free-space');
                     }
@@ -444,22 +467,58 @@
                 card.appendChild(grid);
                 cardContainer.appendChild(card);
             }
-
-            // Output the Master Playlist
-            masterPlaylist.forEach(song => {
-                const listItem = document.createElement('li');
-                listItem.textContent = song.full_name;
-                playlistOutput.appendChild(listItem);
-            });
         }
+
+        /*
+         * --- BUTTON HANDLER FUNCTIONS ---
+         */
+
+        /**
+         * Action 1: Generates a NEW Master Playlist and NEW Cards. (Used for starting a new game/round)
+         */
+        function generateNewPlaylistAndCards() {
+            const allSongs = getMainMix();
+            
+            if (!checkSafety(allSongs)) return;
+
+            // 1. Select a new unique set of songs for the entire round (Master Playlist)
+            const shuffledSongs = shuffleArray([...allSongs]); // Shuffle the entire mix
+            currentMasterPlaylist = shuffledSongs.slice(0, REQUIRED_SONGS); // Select the exact number needed
+            
+            // 2. Render the cards and the new playlist
+            renderBingoCards();
+        }
+
+        /**
+         * Action 2: Generates NEW Cards using the SAME Master Playlist. (Used to give players new cards during the same game/round)
+         */
+        function generateNewCardsOnly() {
+            if (currentMasterPlaylist.length === 0) {
+                alert("Please generate a new playlist first (using the 'New Playlist & New Cards' button).");
+                return;
+            }
+            
+            // 1. Re-randomize the distribution of the EXISTING songs across the 6 cards.
+            //    The master playlist is shuffled and sliced again to create new card segments.
+            const songsForNewCards = shuffleArray([...currentMasterPlaylist]);
+
+            // Note: We temporarily replace currentMasterPlaylist to facilitate the segmenting/rendering logic, 
+            // but the set of songs is the same.
+            currentMasterPlaylist = songsForNewCards;
+
+            // 2. Render the cards, keeping the existing playlist output unchanged (it will be re-rendered, but using the same list).
+            renderBingoCards();
+        }
+
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Generate initial cards using the default mix
-            generateBingoCards();
+            // 1. Initial run: Generate the first master playlist and first set of cards
+            generateNewPlaylistAndCards();
 
-            // 2. Attach event listener to the main generate button
-            document.getElementById('generate-button').addEventListener('click', generateBingoCards);
+            // 2. Attach event listeners
+            document.getElementById('generate-new-playlist-button').addEventListener('click', generateNewPlaylistAndCards);
+            document.getElementById('generate-new-cards-button').addEventListener('click', generateNewCardsOnly);
         });
     </script>
 </body>
