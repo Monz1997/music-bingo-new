@@ -142,7 +142,7 @@
         /* --- 🖨️ PRINT MEDIA QUERY: 4 Cards Per Page (2x2) --- */
         @media print {
             body {
-                margin: 0;
+                margin: 0.5cm; /* Add minimal physical margin */
                 padding: 0;
                 background-color: white;
                 -webkit-print-color-adjust: exact; 
@@ -157,19 +157,22 @@
 
             /* Card Container: Prepare for 4 cards (2 columns x 2 rows) on a portrait page */
             #card-container {
+                /* Use CSS grid to lay out 4 cards (2x2) */
                 display: grid;
                 grid-template-columns: repeat(2, 1fr); 
                 grid-template-rows: repeat(2, 1fr); 
-                width: 21cm; 
-                height: 29.7cm; 
+                
+                /* Maximize usage of standard A4 size (21cm wide, 29.7cm high) */
+                width: 100%; 
+                height: 28.7cm; /* Leave 1cm for top/bottom margins */
                 margin: 0 auto; 
-                gap: 0; 
-                padding: 0.5cm; 
+                gap: 0; /* No gaps between the 2x2 grid areas */
+                padding: 0; 
                 box-sizing: border-box; 
                 page-break-after: always; 
             }
 
-            /* Create page breaks after every group of 4 cards */
+            /* Enforce a page break after every group of 4 cards */
             .bingo-card:nth-child(4n) {
                 page-break-after: always;
             }
@@ -180,14 +183,16 @@
                 border: 1px solid #000; 
                 border-radius: 0; 
                 box-shadow: none; 
-                margin: 0.2cm; 
+                margin: 0.1cm; /* Reduced margin around each card */
                 background-color: white !important; 
                 page-break-inside: avoid; 
+                /* Ensure the card takes up its defined grid area without overflow */
+                min-width: 0;
             }
 
             .card-title {
-                padding: 3px; 
-                font-size: 0.8em; 
+                padding: 2px; /* Minimal padding */
+                font-size: 0.65em; /* Reduced title font size */
                 background-color: white !important;
                 color: #000 !important;
                 border-bottom: 1px solid #000;
@@ -195,20 +200,24 @@
 
             /* Grid layout for printing: 5 rows x 5 columns */
             .card-grid {
+                display: grid; /* Explicitly set display grid */
                 grid-template-columns: repeat(5, 1fr);
-                grid-template-rows: repeat(5, 1fr);
+                flex-grow: 1;
+                overflow: hidden; /* Ensure content stays within the grid area */
             }
             
             .card-cell {
-                /* *** INCREASED PRINT FONT SIZE *** */
-                font-size: 0.7em; 
-                padding: 1px; 
+                font-size: 0.55em; /* Significantly reduced font size for 5x5 content */
+                padding: 1px; /* Minimal padding */
                 border: 1px solid #000; 
                 background-color: white !important;
                 color: #000 !important;
+                line-height: 1.1;
+                box-sizing: border-box;
             }
 
             .card-cell.free-space {
+                font-size: 0.65em; /* Slightly larger free space font */
                 background-color: #ddd !important; 
                 color: #000 !important;
                 font-weight: bold;
@@ -234,7 +243,6 @@
             }
             #playlist-output li {
                 break-inside: avoid-column; 
-                /* *** REDUCED PRINT FONT SIZE for playlist (Host use only) *** */
                 font-size: 0.85em; 
                 margin-bottom: 0.1em;
             }
@@ -377,9 +385,9 @@
 
         // --- Configuration for 5x5 Bingo Cards ---
         const CARD_COUNT = 6; 
-        const CARD_SIZE = 24; // 24 songs + 1 free space = 25 cells
+        const CARD_SIZE_PER_CARD = 24; // 24 songs + 1 free space = 25 cells
         const FREE_SPACE_INDEX = 12; // Center position: (2, 2) which is index 12 (0 to 24)
-        const REQUIRED_SONGS = CARD_SIZE * CARD_COUNT; // 24 * 6 = 144 songs
+        const REQUIRED_SONGS = CARD_SIZE_PER_CARD * CARD_COUNT; // 24 * 6 = 144 songs
 
         /*
          * --- UTILITY FUNCTIONS ---
@@ -398,7 +406,7 @@
             return RAW_SONG_LIST.map(item => {
                 const parts = item.split(' - ');
                 const title = parts[0].trim();
-                const artist = parts[1] ? parts[1].trim() : 'Unknown Artist';
+                const artist = parts.length > 1 ? parts[1].trim() : 'Various Artists';
                 return {
                     title: title,
                     artist: artist,
@@ -428,7 +436,8 @@
          * Renders the cards based on songsForCardDistribution and the playlist using masterPlaylistForCalling.
          */
         function renderBingoCardsAndPlaylist() {
-            if (!checkSafety(getMainMix())) return;
+            const allSongs = getMainMix();
+            if (!checkSafety(allSongs)) return;
             
             clearOutputs();
 
@@ -447,8 +456,8 @@
 
             for (let i = 0; i < CARD_COUNT; i++) {
                 // Get the unique slice for this specific card
-                const start = i * CARD_SIZE;
-                const end = (i + 1) * CARD_SIZE;
+                const start = i * CARD_SIZE_PER_CARD;
+                const end = (i + 1) * CARD_SIZE_PER_CARD;
                 
                 // Segment the song list
                 const cardSongsSegment = songsToDistribute.slice(start, end); 
@@ -498,10 +507,13 @@
             if (!checkSafety(allSongs)) return;
 
             // 1. Select a new unique set of songs (REQUIRED_SONGS)
-            const songsChosen = shuffleArray([...allSongs]).slice(0, REQUIRED_SONGS);
+            const allSongsShuffled = shuffleArray([...allSongs]);
+            const songsChosen = allSongsShuffled.slice(0, REQUIRED_SONGS);
             
             // 2. Set the lists:
+            // The master list is shuffled to give a randomized calling order.
             masterPlaylistForCalling = shuffleArray([...songsChosen]); 
+            // The distribution list is used to ensure songs are split evenly across cards (no duplicates across cards)
             songsForCardDistribution = songsChosen; 
             
             // 3. Render the new round
@@ -518,6 +530,7 @@
             }
             
             // 1. SHUFFLE THE CARD DISTRIBUTION LIST: 
+            // This re-randomizes which song goes on which card (and the order on the card)
             songsForCardDistribution = shuffleArray([...songsForCardDistribution]); 
             
             // 2. The masterPlaylistForCalling is NOT touched.
