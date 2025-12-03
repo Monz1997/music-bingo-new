@@ -6,7 +6,6 @@
     <title>Music Bingo Generator (Main Mix - 6 Cards, 5x5)</title>
 
     <style>
-        /* (CSS styles remain the same for functionality) */
         /* --- General Styles (Screen View) --- */
         body {
             font-family: Arial, sans-serif;
@@ -64,7 +63,6 @@
 
         .bingo-card {
             border: 2px solid #333;
-            /* Card size increased to fit 5x5 content better, maintaining square ratio */
             width: 300px; 
             height: 300px; 
             display: flex;
@@ -86,7 +84,7 @@
             border-bottom: 1px solid #333;
         }
 
-        /* Grid Layout: CHANGED to 5 rows x 5 columns */
+        /* Grid Layout: 5 rows x 5 columns */
         .card-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -101,8 +99,8 @@
             justify-content: center;
             text-align: center;
             padding: 2px; 
-            /* Font size adjusted for 5x5 on screen */
-            font-size: 0.75em; 
+            /* *** INCREASED FONT SIZE (Screen View) *** */
+            font-size: 0.9em; 
             line-height: 1.1;
             overflow: hidden;
             word-wrap: break-word; 
@@ -115,7 +113,7 @@
             color: #333;
         }
 
-        /* --- Playlist Styles (Unchanged) --- */
+        /* --- Playlist Styles (Screen View) --- */
         .playlist-section {
             margin-top: 40px;
             border-top: 2px dashed #ccc;
@@ -132,13 +130,16 @@
             margin: 10px auto;
             padding: 0 20px; 
             list-style-type: decimal; 
-            columns: 1; 
+            /* *** ADDED TWO COLUMNS *** */
+            columns: 2; 
         }
         #playlist-output li {
-            font-size: 1.1em;
+            /* *** REDUCED FONT SIZE for compactness (Screen View) *** */
+            font-size: 0.9em;
+            margin-bottom: 0.1em; /* Reduce spacing between items */
         }
-
-        /* --- 🖨️ PRINT MEDIA QUERY: CHANGED to 4 Cards Per Page (2x2) --- */
+        
+        /* --- 🖨️ PRINT MEDIA QUERY: 4 Cards Per Page (2x2) --- */
         @media print {
             body {
                 margin: 0;
@@ -163,9 +164,8 @@
                 height: 29.7cm; 
                 margin: 0 auto; 
                 gap: 0; 
-                padding: 0.5cm; /* Increased page padding for larger cards */
+                padding: 0.5cm; 
                 box-sizing: border-box; 
-                /* Force next 2 cards onto a new page */
                 page-break-after: always; 
             }
 
@@ -180,7 +180,7 @@
                 border: 1px solid #000; 
                 border-radius: 0; 
                 box-shadow: none; 
-                margin: 0.2cm; /* Margin between cards */
+                margin: 0.2cm; 
                 background-color: white !important; 
                 page-break-inside: avoid; 
             }
@@ -200,7 +200,8 @@
             }
             
             .card-cell {
-                font-size: 0.6em; /* Adjusted for 5x5 cells on a printed page */
+                /* *** INCREASED PRINT FONT SIZE *** */
+                font-size: 0.7em; 
                 padding: 1px; 
                 border: 1px solid #000; 
                 background-color: white !important;
@@ -228,13 +229,14 @@
                 color: #000 !important;
             }
             #playlist-output {
-                columns: 2; 
+                columns: 2; /* Maintained 2 columns */
                 max-width: 100%; 
-                font-size: 1.0em; 
             }
             #playlist-output li {
                 break-inside: avoid-column; 
-                font-size: 1.0em; 
+                /* *** REDUCED PRINT FONT SIZE for playlist (Host use only) *** */
+                font-size: 0.85em; 
+                margin-bottom: 0.1em;
             }
         }
     </style>
