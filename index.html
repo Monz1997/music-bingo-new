@@ -357,8 +357,12 @@
             "American Pie - Don McLean", "Heart of Glass - Blondie"
         ];
         
-        let masterPlaylistForCalling = []; // This list holds the final, shuffled order for the playlist display.
-        let songsForCardDistribution = []; // This list holds the REQUIRED_SONGS, used for segmenting/randomizing cards.
+        // This array holds the list of songs for the CALLER, in their definitive play order.
+        let masterPlaylistForCalling = []; 
+        
+        // This array holds the pool of songs (same as above), but it is repeatedly shuffled 
+        // to segment and randomize the card content.
+        let songsForCardDistribution = []; 
 
         // --- Configuration for 4x4 Bingo Cards ---
         const CARD_COUNT = 6; 
@@ -406,12 +410,12 @@
         }
 
         /*
-         * --- CORE GENERATION FUNCTION ---
+         * --- CORE GENERATION AND RENDERING FUNCTION ---
          */
 
         /**
-         * Renders the cards based on songsForCardDistribution
-         * Renders the playlist based on masterPlaylistForCalling (which is only set/shuffled when a new playlist is generated)
+         * Renders the cards based on songsForCardDistribution and the playlist using masterPlaylistForCalling.
+         * The key is: masterPlaylistForCalling is ONLY shuffled in generateNewPlaylistAndCards.
          */
         function renderBingoCardsAndPlaylist() {
             if (!checkSafety(getMainMix())) return;
@@ -422,6 +426,7 @@
             const cardContainer = document.getElementById('card-container');
 
             // --- 1. Render the Master Playlist (Fixed order determined on playlist generation) ---
+            // We use the masterPlaylistForCalling array, which is ONLY updated in the 'New Playlist' function.
             masterPlaylistForCalling.forEach(song => {
                 const listItem = document.createElement('li');
                 listItem.textContent = song.full_name;
@@ -429,7 +434,8 @@
             });
             
             // --- 2. Render the Cards ---
-            const songsToDistribute = [...songsForCardDistribution]; // Clone the songs chosen for this round
+            // The songsForCardDistribution is already shuffled by the calling function (either New Playlist or New Cards Only)
+            const songsToDistribute = songsForCardDistribution; 
 
             for (let i = 0; i < CARD_COUNT; i++) {
                 // Get the unique slice for this specific card
@@ -437,10 +443,12 @@
                 const end = (i + 1) * CARD_SIZE;
                 
                 // Segment the song list
+                // NOTE: This segment determines the songs that will appear on card #i+1
                 const cardSongsSegment = songsToDistribute.slice(start, end); 
 
-                // Randomize the song positions *within* this card's set
-                const cardSongs = shuffleArray(cardSongsSegment); 
+                // Randomize the song positions *within* this specific card's set
+                // This ensures songs appear in different cells on every card, even if the content is the same.
+                const cardSongs = shuffleArray([...cardSongsSegment]); // Clone before shuffling the segment!
                 
                 // Insert free space at the center position (index 7 of 16 total cells)
                 cardSongs.splice(FREE_SPACE_INDEX, 0, { full_name: "🎶 FREE SPACE 🎶", isFree: true });
@@ -483,12 +491,15 @@
             
             if (!checkSafety(allSongs)) return;
 
-            // 1. Select a new unique set of songs for the entire round (REQUIRED_SONGS)
+            // 1. Select a new unique set of songs (REQUIRED_SONGS)
             const songsChosen = shuffleArray([...allSongs]).slice(0, REQUIRED_SONGS);
             
             // 2. Set the lists:
-            songsForCardDistribution = songsChosen; // The set of songs used across all cards
-            masterPlaylistForCalling = shuffleArray([...songsChosen]); // The calling list, shuffled for play order
+            // The calling playlist is the definitive list, shuffled for play order.
+            masterPlaylistForCalling = shuffleArray([...songsChosen]); 
+            
+            // The card distribution list is the same set of songs, but *segmented* // for card creation (Card 1 gets songs 1-15, Card 2 gets 16-30, etc.)
+            songsForCardDistribution = songsChosen; 
             
             // 3. Render the new round
             renderBingoCardsAndPlaylist();
@@ -503,13 +514,15 @@
                 return;
             }
             
-            // 1. We must ensure the songs are distributed differently on the cards.
-            //    We shuffle the existing songs used for card distribution.
+            // 1. SHUFFLE THE CARD DISTRIBUTION LIST: 
+            // This is the core step. It keeps the song pool (the content of the cards) the same, 
+            // but re-randomizes which songs are assigned to which card segment (Card 1, Card 2, etc.), 
+            // ensuring the cards are new and unique.
             songsForCardDistribution = shuffleArray([...songsForCardDistribution]); 
             
-            // 2. The masterPlaylistForCalling remains untouched, maintaining the calling order.
+            // 2. The masterPlaylistForCalling is NOT touched, ensuring the on-screen order remains the same.
             
-            // 3. Render the new cards (and re-render the playlist, which will look the same)
+            // 3. Render the new cards (The playlist output remains the same)
             renderBingoCardsAndPlaylist();
         }
 
