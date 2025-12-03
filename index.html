@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music Bingo Generator (Main Mix - 6 Cards)</title>
+    <title>Music Bingo Generator (Main Mix - 6 Cards, 5x5)</title>
 
     <style>
         /* (CSS styles remain the same for functionality) */
@@ -64,8 +64,9 @@
 
         .bingo-card {
             border: 2px solid #333;
-            width: 250px; 
-            height: 250px; 
+            /* Card size increased to fit 5x5 content better, maintaining square ratio */
+            width: 300px; 
+            height: 300px; 
             display: flex;
             flex-direction: column;
             box-shadow: 0 5px 10px rgba(0,0,0,0.1); 
@@ -85,11 +86,11 @@
             border-bottom: 1px solid #333;
         }
 
-        /* Grid Layout: 4 rows x 4 columns for 15 songs + Free Space */
+        /* Grid Layout: CHANGED to 5 rows x 5 columns */
         .card-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
             flex-grow: 1; 
         }
 
@@ -100,7 +101,8 @@
             justify-content: center;
             text-align: center;
             padding: 2px; 
-            font-size: 0.65em; 
+            /* Font size adjusted for 5x5 on screen */
+            font-size: 0.75em; 
             line-height: 1.1;
             overflow: hidden;
             word-wrap: break-word; 
@@ -132,8 +134,11 @@
             list-style-type: decimal; 
             columns: 1; 
         }
+        #playlist-output li {
+            font-size: 1.1em;
+        }
 
-        /* --- 🖨️ PRINT MEDIA QUERY: 6 Cards Per Page (Optimized Fit) --- */
+        /* --- 🖨️ PRINT MEDIA QUERY: CHANGED to 4 Cards Per Page (2x2) --- */
         @media print {
             body {
                 margin: 0;
@@ -149,17 +154,24 @@
                 display: none;
             }
 
-            /* Card Container: Prepare for 6 cards (2 columns x 3 rows) on a portrait page */
+            /* Card Container: Prepare for 4 cards (2 columns x 2 rows) on a portrait page */
             #card-container {
                 display: grid;
                 grid-template-columns: repeat(2, 1fr); 
-                grid-template-rows: repeat(3, 1fr); 
+                grid-template-rows: repeat(2, 1fr); 
                 width: 21cm; 
                 height: 29.7cm; 
                 margin: 0 auto; 
                 gap: 0; 
-                padding: 0.2cm; /* Page padding */
+                padding: 0.5cm; /* Increased page padding for larger cards */
                 box-sizing: border-box; 
+                /* Force next 2 cards onto a new page */
+                page-break-after: always; 
+            }
+
+            /* Create page breaks after every group of 4 cards */
+            .bingo-card:nth-child(4n) {
+                page-break-after: always;
             }
 
             .bingo-card {
@@ -168,27 +180,27 @@
                 border: 1px solid #000; 
                 border-radius: 0; 
                 box-shadow: none; 
-                margin: 0.15cm; /* Margin between cards */
+                margin: 0.2cm; /* Margin between cards */
                 background-color: white !important; 
                 page-break-inside: avoid; 
             }
 
             .card-title {
-                padding: 2px; 
-                font-size: 0.7em; 
+                padding: 3px; 
+                font-size: 0.8em; 
                 background-color: white !important;
                 color: #000 !important;
                 border-bottom: 1px solid #000;
             }
 
-            /* Grid layout for printing: 4 rows x 4 columns */
+            /* Grid layout for printing: 5 rows x 5 columns */
             .card-grid {
-                grid-template-columns: repeat(4, 1fr);
-                grid-template-rows: repeat(4, 1fr);
+                grid-template-columns: repeat(5, 1fr);
+                grid-template-rows: repeat(5, 1fr);
             }
             
             .card-cell {
-                font-size: 0.55em; 
+                font-size: 0.6em; /* Adjusted for 5x5 cells on a printed page */
                 padding: 1px; 
                 border: 1px solid #000; 
                 background-color: white !important;
@@ -218,17 +230,18 @@
             #playlist-output {
                 columns: 2; 
                 max-width: 100%; 
-                font-size: 0.8em;
+                font-size: 1.0em; 
             }
             #playlist-output li {
                 break-inside: avoid-column; 
+                font-size: 1.0em; 
             }
         }
     </style>
     </head>
 <body>
     <header>
-        <h1>🎶 Main Mix Bingo Generator (6 Cards, $4 \times 4$)</h1>
+        <h1>🎶 Main Mix Bingo Generator (6 Cards, $5 \times 5$)</h1>
         <p>Choose your action:</p>
     </header>
 
@@ -326,7 +339,7 @@
             "Sweet Emotion - Aerosmith", "Gimme Shelter - The Rolling Stones", "Paint It Black - The Rolling Stones",
             "Iron Man - Black Sabbath", "Sultans of Swing - Dire Straits", "The Chain - Fleetwood Mac",
             "Living After Midnight - Judas Priest", "Master of Puppets - Metallica", "The Final Countdown - Europe",
-            "Still Loving You - Scorpions", "You Oughta Know - Alanis Morissette",
+            "Still Loving You - Scorpions", "You Oughta Know - Alanis Morisette",
             "Good Riddance (Time of Your Life) - Green Day", "All the Small Things - blink-182",
             "Dani California - Red Hot Chili Peppers", "In the End - Linkin Park", "Chop Suey! - System of a Down",
             "The Pretender - Foo Fighters", "Welcome to the Black Parade - My Chemical Romance",
@@ -357,18 +370,14 @@
             "American Pie - Don McLean", "Heart of Glass - Blondie"
         ];
         
-        // This array holds the list of songs for the CALLER, in their definitive play order.
         let masterPlaylistForCalling = []; 
-        
-        // This array holds the pool of songs (same as above), but it is repeatedly shuffled 
-        // to segment and randomize the card content.
         let songsForCardDistribution = []; 
 
-        // --- Configuration for 4x4 Bingo Cards ---
+        // --- Configuration for 5x5 Bingo Cards ---
         const CARD_COUNT = 6; 
-        const CARD_SIZE = 15; // 15 songs + 1 free space = 16 cells
-        const FREE_SPACE_INDEX = 7; 
-        const REQUIRED_SONGS = CARD_SIZE * CARD_COUNT;
+        const CARD_SIZE = 24; // 24 songs + 1 free space = 25 cells
+        const FREE_SPACE_INDEX = 12; // Center position: (2, 2) which is index 12 (0 to 24)
+        const REQUIRED_SONGS = CARD_SIZE * CARD_COUNT; // 24 * 6 = 144 songs
 
         /*
          * --- UTILITY FUNCTIONS ---
@@ -403,7 +412,7 @@
 
         function checkSafety(availableSongs) {
             if (availableSongs.length < REQUIRED_SONGS) {
-                alert(`Error: The mix only has ${availableSongs.length} unique songs, but you need ${REQUIRED_SONGS} to generate ${CARD_COUNT} unique 4x4 cards. Please add more songs to the RAW_SONG_LIST.`);
+                alert(`Error: The mix only has ${availableSongs.length} unique songs, but you need ${REQUIRED_SONGS} to generate ${CARD_COUNT} unique 5x5 cards. Please add more songs to the RAW_SONG_LIST.`);
                 return false;
             }
             return true;
@@ -415,7 +424,6 @@
 
         /**
          * Renders the cards based on songsForCardDistribution and the playlist using masterPlaylistForCalling.
-         * The key is: masterPlaylistForCalling is ONLY shuffled in generateNewPlaylistAndCards.
          */
         function renderBingoCardsAndPlaylist() {
             if (!checkSafety(getMainMix())) return;
@@ -426,7 +434,6 @@
             const cardContainer = document.getElementById('card-container');
 
             // --- 1. Render the Master Playlist (Fixed order determined on playlist generation) ---
-            // We use the masterPlaylistForCalling array, which is ONLY updated in the 'New Playlist' function.
             masterPlaylistForCalling.forEach(song => {
                 const listItem = document.createElement('li');
                 listItem.textContent = song.full_name;
@@ -434,7 +441,6 @@
             });
             
             // --- 2. Render the Cards ---
-            // The songsForCardDistribution is already shuffled by the calling function (either New Playlist or New Cards Only)
             const songsToDistribute = songsForCardDistribution; 
 
             for (let i = 0; i < CARD_COUNT; i++) {
@@ -443,14 +449,12 @@
                 const end = (i + 1) * CARD_SIZE;
                 
                 // Segment the song list
-                // NOTE: This segment determines the songs that will appear on card #i+1
                 const cardSongsSegment = songsToDistribute.slice(start, end); 
 
                 // Randomize the song positions *within* this specific card's set
-                // This ensures songs appear in different cells on every card, even if the content is the same.
-                const cardSongs = shuffleArray([...cardSongsSegment]); // Clone before shuffling the segment!
+                const cardSongs = shuffleArray([...cardSongsSegment]);
                 
-                // Insert free space at the center position (index 7 of 16 total cells)
+                // Insert free space at the center position (index 12 of 25 total cells)
                 cardSongs.splice(FREE_SPACE_INDEX, 0, { full_name: "🎶 FREE SPACE 🎶", isFree: true });
 
                 const card = document.createElement('div');
@@ -495,10 +499,7 @@
             const songsChosen = shuffleArray([...allSongs]).slice(0, REQUIRED_SONGS);
             
             // 2. Set the lists:
-            // The calling playlist is the definitive list, shuffled for play order.
             masterPlaylistForCalling = shuffleArray([...songsChosen]); 
-            
-            // The card distribution list is the same set of songs, but *segmented* // for card creation (Card 1 gets songs 1-15, Card 2 gets 16-30, etc.)
             songsForCardDistribution = songsChosen; 
             
             // 3. Render the new round
@@ -515,12 +516,9 @@
             }
             
             // 1. SHUFFLE THE CARD DISTRIBUTION LIST: 
-            // This is the core step. It keeps the song pool (the content of the cards) the same, 
-            // but re-randomizes which songs are assigned to which card segment (Card 1, Card 2, etc.), 
-            // ensuring the cards are new and unique.
             songsForCardDistribution = shuffleArray([...songsForCardDistribution]); 
             
-            // 2. The masterPlaylistForCalling is NOT touched, ensuring the on-screen order remains the same.
+            // 2. The masterPlaylistForCalling is NOT touched.
             
             // 3. Render the new cards (The playlist output remains the same)
             renderBingoCardsAndPlaylist();
