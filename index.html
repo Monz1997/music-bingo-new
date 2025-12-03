@@ -6,6 +6,7 @@
     <title>Music Bingo Generator (Main Mix - 6 Cards)</title>
 
     <style>
+        /* (CSS styles remain the same for functionality) */
         /* --- General Styles (Screen View) --- */
         body {
             font-family: Arial, sans-serif;
@@ -325,7 +326,7 @@
             "Sweet Emotion - Aerosmith", "Gimme Shelter - The Rolling Stones", "Paint It Black - The Rolling Stones",
             "Iron Man - Black Sabbath", "Sultans of Swing - Dire Straits", "The Chain - Fleetwood Mac",
             "Living After Midnight - Judas Priest", "Master of Puppets - Metallica", "The Final Countdown - Europe",
-            "Still Loving You - Scorpions", "You Oughta Know - Alanis Morisette",
+            "Still Loving You - Scorpions", "You Oughta Know - Alanis Morissette",
             "Good Riddance (Time of Your Life) - Green Day", "All the Small Things - blink-182",
             "Dani California - Red Hot Chili Peppers", "In the End - Linkin Park", "Chop Suey! - System of a Down",
             "The Pretender - Foo Fighters", "Welcome to the Black Parade - My Chemical Romance",
@@ -356,7 +357,8 @@
             "American Pie - Don McLean", "Heart of Glass - Blondie"
         ];
         
-        let currentMasterPlaylist = []; // Holds the song objects selected for the current round.
+        let masterPlaylistForCalling = []; // This list holds the final, shuffled order for the playlist display.
+        let songsForCardDistribution = []; // This list holds the REQUIRED_SONGS, used for segmenting/randomizing cards.
 
         // --- Configuration for 4x4 Bingo Cards ---
         const CARD_COUNT = 6; 
@@ -369,6 +371,7 @@
          */
 
         function shuffleArray(array) {
+            // Fisher-Yates shuffle
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [array[i], array[j]] = [array[j], array[i]];
@@ -407,37 +410,36 @@
          */
 
         /**
-         * Generates the cards based on a pre-selected set of songs (the currentMasterPlaylist).
+         * Renders the cards based on songsForCardDistribution
+         * Renders the playlist based on masterPlaylistForCalling (which is only set/shuffled when a new playlist is generated)
          */
-        function renderBingoCards() {
+        function renderBingoCardsAndPlaylist() {
             if (!checkSafety(getMainMix())) return;
             
             clearOutputs();
 
-            // 1. Get the songs selected for the current round (which should be stored in currentMasterPlaylist)
-            const songsOnCards = currentMasterPlaylist;
-            
-            // 2. Output the Master Playlist (shuffled for play order)
             const playlistOutput = document.getElementById('playlist-output');
-            const masterPlaylistShuffled = shuffleArray([...songsOnCards]); // Clone and shuffle for calling order
+            const cardContainer = document.getElementById('card-container');
 
-            masterPlaylistShuffled.forEach(song => {
+            // --- 1. Render the Master Playlist (Fixed order determined on playlist generation) ---
+            masterPlaylistForCalling.forEach(song => {
                 const listItem = document.createElement('li');
                 listItem.textContent = song.full_name;
                 playlistOutput.appendChild(listItem);
             });
-
-            const cardContainer = document.getElementById('card-container');
+            
+            // --- 2. Render the Cards ---
+            const songsToDistribute = [...songsForCardDistribution]; // Clone the songs chosen for this round
 
             for (let i = 0; i < CARD_COUNT; i++) {
-                // 3. Take the unique slice for this specific card
+                // Get the unique slice for this specific card
                 const start = i * CARD_SIZE;
                 const end = (i + 1) * CARD_SIZE;
                 
-                // Get the songs unique to this card's segment
-                const cardSongsSegment = songsOnCards.slice(start, end); 
+                // Segment the song list
+                const cardSongsSegment = songsToDistribute.slice(start, end); 
 
-                // 4. Randomize the song positions *within* this card's set
+                // Randomize the song positions *within* this card's set
                 const cardSongs = shuffleArray(cardSongsSegment); 
                 
                 // Insert free space at the center position (index 7 of 16 total cells)
@@ -474,40 +476,41 @@
          */
 
         /**
-         * Action 1: Generates a NEW Master Playlist and NEW Cards. (Used for starting a new game/round)
+         * Action 1: Generates a NEW Master Playlist and NEW Cards. (The Major Action)
          */
         function generateNewPlaylistAndCards() {
             const allSongs = getMainMix();
             
             if (!checkSafety(allSongs)) return;
 
-            // 1. Select a new unique set of songs for the entire round (Master Playlist)
-            const shuffledSongs = shuffleArray([...allSongs]); // Shuffle the entire mix
-            currentMasterPlaylist = shuffledSongs.slice(0, REQUIRED_SONGS); // Select the exact number needed
+            // 1. Select a new unique set of songs for the entire round (REQUIRED_SONGS)
+            const songsChosen = shuffleArray([...allSongs]).slice(0, REQUIRED_SONGS);
             
-            // 2. Render the cards and the new playlist
-            renderBingoCards();
+            // 2. Set the lists:
+            songsForCardDistribution = songsChosen; // The set of songs used across all cards
+            masterPlaylistForCalling = shuffleArray([...songsChosen]); // The calling list, shuffled for play order
+            
+            // 3. Render the new round
+            renderBingoCardsAndPlaylist();
         }
 
         /**
-         * Action 2: Generates NEW Cards using the SAME Master Playlist. (Used to give players new cards during the same game/round)
+         * Action 2: Generates NEW Cards using the SAME Master Playlist. (The Minor Action)
          */
         function generateNewCardsOnly() {
-            if (currentMasterPlaylist.length === 0) {
+            if (masterPlaylistForCalling.length === 0) {
                 alert("Please generate a new playlist first (using the 'New Playlist & New Cards' button).");
                 return;
             }
             
-            // 1. Re-randomize the distribution of the EXISTING songs across the 6 cards.
-            //    The master playlist is shuffled and sliced again to create new card segments.
-            const songsForNewCards = shuffleArray([...currentMasterPlaylist]);
-
-            // Note: We temporarily replace currentMasterPlaylist to facilitate the segmenting/rendering logic, 
-            // but the set of songs is the same.
-            currentMasterPlaylist = songsForNewCards;
-
-            // 2. Render the cards, keeping the existing playlist output unchanged (it will be re-rendered, but using the same list).
-            renderBingoCards();
+            // 1. We must ensure the songs are distributed differently on the cards.
+            //    We shuffle the existing songs used for card distribution.
+            songsForCardDistribution = shuffleArray([...songsForCardDistribution]); 
+            
+            // 2. The masterPlaylistForCalling remains untouched, maintaining the calling order.
+            
+            // 3. Render the new cards (and re-render the playlist, which will look the same)
+            renderBingoCardsAndPlaylist();
         }
 
 
