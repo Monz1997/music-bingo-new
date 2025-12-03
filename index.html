@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Bingo Generator (Main Mix - 6 Cards)</title>
+
+    <style>
+        /* --- General Styles (Screen View) --- */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9; 
+            color: #333;
+            line-height: 1.6;
+        }
+
+        header, .controls, .playlist-section {
+            max-width: 900px;
+            margin: 0 auto 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333; 
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px 2px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            background-color: white;
+            color: #333;
+            transition: background-color 0.3s ease;
+        }
+
+        #generate-button {
+            background-color: #eee;
+            font-size: 16px;
+            padding: 12px 25px;
+        }
+
+        /* --- Bingo Card Container (Screen View) --- */
+        #card-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px; 
+            margin: 20px auto;
+            max-width: 1400px; 
+        }
+
+        .bingo-card {
+            border: 2px solid #333;
+            width: 250px; 
+            height: 250px; 
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1); 
+            background-color: white;
+            border-radius: 4px;
+            overflow: hidden; 
+        }
+
+        .card-title {
+            background-color: #ddd; 
+            color: #333;
+            padding: 6px;
+            text-align: center;
+            font-size: 0.9em;
+            font-weight: bold;
+            flex-shrink: 0; 
+            border-bottom: 1px solid #333;
+        }
+
+        /* Grid Layout: 4 rows x 4 columns for 15 songs + Free Space */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            flex-grow: 1; 
+        }
+
+        .card-cell {
+            border: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2px; 
+            font-size: 0.65em; 
+            line-height: 1.1;
+            overflow: hidden;
+            word-wrap: break-word; 
+            box-sizing: border-box; 
+        }
+
+        .card-cell.free-space { 
+            background-color: #ccc; 
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* --- Playlist Styles (Unchanged) --- */
+        .playlist-section {
+            margin-top: 40px;
+            border-top: 2px dashed #ccc;
+            padding-top: 25px;
+            text-align: left;
+        }
+        .playlist-section h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        #playlist-output {
+            max-width: 700px;
+            margin: 10px auto;
+            padding: 0 20px; 
+            list-style-type: decimal; 
+            columns: 1; 
+        }
+
+        /* --- 🖨️ PRINT MEDIA QUERY: 6 Cards Per Page (Optimized Fit) --- */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: white;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+                color: #000 !important;
+            }
+
+            /* Hide elements not needed for printing */
+            header, .controls, footer, hr {
+                display: none;
+            }
+
+            /* Card Container: Prepare for 6 cards (2 columns x 3 rows) on a portrait page */
+            #card-container {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr); 
+                grid-template-rows: repeat(3, 1fr); 
+                width: 21cm; 
+                height: 29.7cm; 
+                margin: 0 auto; 
+                gap: 0; 
+                padding: 0.2cm; /* Page padding */
+                box-sizing: border-box; 
+            }
+
+            .bingo-card {
+                width: auto; 
+                height: auto; 
+                border: 1px solid #000; 
+                border-radius: 0; 
+                box-shadow: none; 
+                margin: 0.15cm; /* Margin between cards */
+                background-color: white !important; 
+                page-break-inside: avoid; 
+            }
+
+            .card-title {
+                padding: 2px; 
+                font-size: 0.7em; 
+                background-color: white !important;
+                color: #000 !important;
+                border-bottom: 1px solid #000;
+            }
+
+            /* Grid layout for printing: 4 rows x 4 columns */
+            .card-grid {
+                grid-template-columns: repeat(4, 1fr);
+                grid-template-rows: repeat(4, 1fr);
+            }
+            
+            .card-cell {
+                font-size: 0.55em; 
+                padding: 1px; 
+                border: 1px solid #000; 
+                background-color: white !important;
+                color: #000 !important;
+            }
+
+            .card-cell.free-space {
+                background-color: #ddd !important; 
+                color: #000 !important;
+                font-weight: bold;
+            }
+
+            /* Playlist Section: Starts on a new page */
+            .playlist-section {
+                display: block;
+                border-top: none; 
+                padding-top: 0;
+                page-break-before: always; 
+                text-align: left;
+                width: 100%; 
+                box-sizing: border-box;
+                padding: 1cm; 
+            }
+            .playlist-section h2 {
+                color: #000 !important;
+            }
+            #playlist-output {
+                columns: 2; 
+                max-width: 100%; 
+                font-size: 0.8em;
+            }
+            #playlist-output li {
+                break-inside: avoid-column; 
+            }
+        }
+    </style>
+    </head>
+<body>
+    <header>
+        <h1>🎶 Main Mix Bingo Generator (6 Cards, $4 \times 4$)</h1>
+        <p>Click the button below to generate a new round of 6 unique cards from the complete song mix.</p>
+    </header>
+
+    <div class="controls">
+        <button id="generate-button">Generate New Cards & Playlist</button>
+        <button onclick="window.print()">🖨️ Print Cards</button>
+    </div>
+
+    <div id="card-container">
+    </div>
+
+    <section class="playlist-section">
+        <h2>Master Playlist for Called Songs</h2>
+        <ol id="playlist-output">
+            </ol>
+    </section>
+
+    <script>
+        // --- EMBEDDED SONG LIST (This is the single 'Main Mix') ---
+        const RAW_SONG_LIST = [
+            "Baby One More Time - Britney Spears", "867-5309 / Jenny - Tommy Tutone",
+            "9 to 5 - Dolly Parton", "Africa - Toto", "Ain't No Mountain High Enough - Marvin Gaye & Tammi Terrell",
+            "All I Wanna Do - Sheryl Crow", "All Night Long (All Night) - Lionel Richie",
+            "Beast Of Burden - The Rolling Stones", "Believe - Cher", "Bitch - Meredith Brooks",
+            "Brandy (You're a Fine Girl) - Looking Glass", "Breakfast At Tiffany's - Deep Blue Something",
+            "Brown Eyed Girl - Van Morrison", "Build Me Up Buttercup - The Foundations",
+            "Call Me Maybe - Carly Rae Jepsen", "Celebration - Kool & The Gang", "Centerfold - The J. Geils Band",
+            "Closing Time - Semisonic", "Come and Get Your Love - Redbone", "Come On Eileen - Dexys Midnight Runners",
+            "Complicated - Avril Lavigne", "Dancing Queen - ABBA", "Don't Stop Believin' - Journey",
+            "Don't Stop Me Now - Queen", "Doo Wop (That Thing) - Lauryn Hill", "Dreamlover - Mariah Carey",
+            "Dreams - The Cranberries", "Emotions - Mariah Carey", "Every Morning - Sugar Ray",
+            "Everybody Wants to rule the world - Tears for Fears",
+            "Smells Like Teen Spirit - Nirvana", "November Rain - Guns N' Roses", "What's Up? - 4 Non Blondes",
+            "Losing My Religion - R.E.M.", "Everlong - Foo Fighters", "Don't Speak - No Doubt",
+            "Self Esteem - The Offspring", "1979 - The Smashing Pumpkins", "Basket Case - Green Day",
+            "Under the Bridge - Red Hot Chili Peppers", "Black Hole Sun - Soundgarden", "All Star - Smash Mouth",
+            "Fly Away - Lenny Kravitz", "Buddy Holly - Weezer", "Glycerine - Bush", "Cannonball - The Breeders",
+            "Been Caught Stealing - Jane's Addiction", "Midlife Crisis - Faith No More", "Jeremy - Pearl Jam",
+            "Song 2 - Blur", "Killing In the Name - Rage Against The Machine", "You Could Be Mine - Guns N' Roses",
+            "Motorcycle Emptiness - Manic Street Preachers", "Monkey Wrench - Foo Fighters",
+            "Plush - Stone Temple Pilots", "Suck My Kiss - Red Hot Chili Peppers", "Come As You Are - Nirvana",
+            "Bullet With Butterfly Wings - The Smashing Puppets", "Outshined - Soundgarden",
+            "Dream - John Lennon", "A Horse with No Name - America", "A Pillow of Winds - Pink Floyd",
+            "Angie - The Rolling Stones", "Bell Bottom Blues - Derek & The Dominos", "Black Water - The Doobie Brothers",
+            "Blackbird - The Beatles", "California Dreamin' - The Mamas & The Papas", "Can't Find My Way Home - Blind Faith",
+            "Crazy Love - Van Morrison", "Crazy Love - Poco", "Dark Sweet Lady - George Harrison",
+            "Deacon Blues - Steely Dan", "Dirty Work - Steely Dan", "Does Anybody Really Know What Time Is It? - Chicago",
+            "Dog & Butterfly - Heart", "Dreams - Fleetwood Mac", "Everybody's Talkin' - Harry Nilsson",
+            "Fearless - Pink Floyd", "For What It's Worth - Buffalo Springfield", "From Now On - Supertramp",
+            "From the Beginning - Emerson, Lake & Palmer", "God Only Knows - The Beach Boys",
+            "Going to California - Led Zeppelin", "Goodbye Yellow Brick Road - Elton John", "Graceland - Paul Simon",
+
+            // Pop, Rock, and 80s additions
+            "Billie Jean - Michael Jackson", "Like a Prayer - Madonna", "I Wanna Dance with Somebody - Whitney Houston",
+            "Livin' on a Prayer - Bon Jovi", "Sweet Dreams (Are Made of This) - Eurythmics", "I Want It That Way - Backstreet Boys",
+            "Wonderwall - Oasis", "Crazy in Love - Beyoncé ft. Jay-Z", "Hey Ya! - Outkast", "Since U Been Gone - Kelly Clarkson",
+            "Umbrella - Rihanna ft. Jay-Z", "Hips Don't Lie - Shakira ft. Wyclef Jean", "Rolling in the Deep - Adele",
+            "Uptown Funk - Mark Ronson ft. Bruno Mars", "Happy - Pharrell Williams", "Despacito - Luis Fonsi & Daddy Yankee",
+            "Shape of You - Ed Sheeran", "As It Was - Harry Styles", "Blinding Lights - The Weeknd", "Good 4 u - Olivia Rodrigo",
+            "Drivers License - Olivia Rodrigo", "Bad Guy - Billie Eilish", "Bohemian Rhapsody - Queen", "Imagine - John Lennon",
+            "Stayin' Alive - Bee Gees", "Hotel California - Eagles", "Hound Dog - Elvis Presley", "Great Balls of Fire - Jerry Lee Lewis",
+            "La Bamba - Ritchie Valens", "What'd I Say - Ray Charles", "Tutti Frutti - Little Richard", "My Girl - The Temptations",
+            "(I Can't Get No) Satisfaction - The Rolling Stones", "I Heard It Through the Grapevine - Marvin Gaye",
+            "Hey Jude - The Beatles", "Respect - Aretha Franklin", "Material Girl - Madonna",
+            "Girls Just Want to Have Fun - Cyndi Lauper", "Take On Me - A-ha", "With or Without You - U2",
+            "Walking on Sunshine - Katrina & The Waves", "Gimme More - Britney Spears", "Poker Face - Lady Gaga",
+            "Single Ladies (Put a Ring on It) - Beyoncé", "Mr. Brightside - The Killers", "Firework - Katy Perry",
+            "Someone Like You - Adele", "Can't Hold Us - Macklemore & Ryan Lewis", "Party Rock Anthem - LMFAO",
+            "Watermelon Sugar - Harry Styles", "Levitating - Dua Lipa", "Savage - Megan Thee Stallion",
+            "WAP - Cardi B ft. Megan Thee Stallion", "What's Love Got to Do with It - Tina Turner",
+            "Careless Whisper - George Michael", "Jessie's Girl - Rick Springfield", "Another One Bites the Dust - Queen",
+            "Torn - Natalie Imbruglia", "Macarena - Los del Río", "Vogue - Madonna", "One - U2",
+            "Whenever, Wherever - Shakira", "In Da Club - 50 Cent", "Beautiful Day - U2",
+            "Can't Get You Out of My Head - Kylie Minogue", "Get Lucky - Daft Punk ft. Pharrell Williams",
+            "Thinking Out Loud - Ed Sheeran", "Shallow - Lady Gaga & Bradley Cooper",
+            "Old Town Road - Lil Nas X ft. Billy Ray Cyrus", "All of Me - John Legend", "Heat Waves - Glass Animals",
+            "Stay - The Kid LAROI & Justin Bieber", "Kiss Me More - Doja Cat ft. SZA", "About Damn Time - Lizzo",
+            "Unholy - Sam Smith & Kim Petras", "Backstreet's Back - Backstreet Boys", "Barbie Girl - Aqua",
+            "Livin' La Vida Loca - Ricky Martin", "Smooth - Santana ft. Rob Thomas",
+            "Genie in a Bottle - Christina Aguilera", "The Real Slim Shady - Eminem", "Hollaback Girl - Gwen Stefani",
+            "Sweet Escape - Gwen Stefani ft. Akon", "Locked Out Of Heaven - Bruno Mars",
+
+            // Rock & '70s-'25 Mix List
+            "Whole Lotta Love - Led Zeppelin", "Highway to Hell - AC/DC", "Another Brick in the Wall, Pt. 2 - Pink Floyd",
+            "Walk This Way - Aerosmith", "Baba O'Riley - The Who", "Light My Fire - The Doors",
+            "Born to Run - Bruce Springsteen", "Layla - Derek and the Dominos", "Thunderstruck - AC/DC",
+            "Back in Black - AC/DC", "Dream On - Aerosmith", "More Than a Feeling - Boston",
+            "Paranoid - Black Sabbath", "Go Your Own Way - Fleetwood Mac", "Killing in the Name - Rage Against the Machine",
+            "American Idiot - Green Day", "Seven Nation Army - The White Stripes", "When You Were Young - The Killers",
+            "The Sound of Silence - Simon & Garfunkel", "Free Bird - Lynyrd Skynyrd", "Purple Haze - The Jimi Hendrix Experience",
+            "Welcome to the Jungle - Guns N' Roses", "I Love Rock 'n' Roll - Joan Jett & the Blackhearts",
+            "Wind of Change - Scorpions", "Zombie - The Cranberries", "Californication - Red Hot Chili Peppers",
+            "Iris - Goo Goo Dolls", "Lithium - Nirvana", "Creep - Radiohead", "Kashmir - Led Zeppelin",
+            "Sweet Emotion - Aerosmith", "Gimme Shelter - The Rolling Stones", "Paint It Black - The Rolling Stones",
+            "Iron Man - Black Sabbath", "Sultans of Swing - Dire Straits", "The Chain - Fleetwood Mac",
+            "Living After Midnight - Judas Priest", "Master of Puppets - Metallica", "The Final Countdown - Europe",
+            "Still Loving You - Scorpions", "You Oughta Know - Alanis Morissette",
+            "Good Riddance (Time of Your Life) - Green Day", "All the Small Things - blink-182",
+            "Dani California - Red Hot Chili Peppers", "In the End - Linkin Park", "Chop Suey! - System of a Down",
+            "The Pretender - Foo Fighters", "Welcome to the Black Parade - My Chemical Romance",
+            "R U Mine? - Arctic Monkeys", "Ho Hey - The Lumineers", "Lonely Boy - The Black Keys",
+            "Radioactive - Imagine Dragons", "Eye of the Tiger - Survivor", "We Will Rock You - Queen",
+            "Shook Me All Night Long - AC/DC", "Jailhouse Rock - Elvis Presley", "Johnny B. Goode - Chuck Berry",
+            "Blue Suede Shoes - Carl Perkins", "A Whiter Shade of Pale - Procol Harum", "Like a Rolling Stone - Bob Dylan",
+            "Sympathy for the Devil - The Rolling Stones", "Helter Skelter - The Beatles", "Smoke on the Water - Deep Purple",
+            "Running with the Devil - Van Halen", "Wanted Dead or Alive - Bon Jovi", "I Wanna Rock - Twisted Sister",
+            "Kickstart My Heart - Mötley Crüe", "Machinehead - Bush", "Learn to Fly - Foo Fighters",
+            "Another Day in Paradise - Phil Collins", "Walk Like an Egyptian - The Bangles",
+            "Physical - Olivia Newton-John", "Owner of a Lonely Heart - Yes", "The Safety Dance - Men Without Hats",
+            "How Will I Know - Whitney Houston", "Here I Go Again - Whitesnake", "Super Freak - Rick James",
+            "Rosanna - Toto", "We Got the Beat - The Go-Go's", "Just Can't Get Enough - Depeche Mode",
+            "Sledgehammer - Peter Gabriel", "True Colors - Cyndi Lauper", "Keep on Loving You - REO Speedwagon",
+            "The Look - Roxette", "If You Leave - OMD", "Abracadabra - Steve Miller Band",
+            "It's Raining Men - The Weather Girls", "The Tide Is High - Blondie", "Blue Monday - New Order",
+            "Our House - Madness", "Burning Heart - Survivor", "The Flame - Cheap Trick", "Kyrie - Mr. Mister",
+            "Melt With You - Modern English", "Heaven - Bryan Adams", "Against All Odds - Phil Collins",
+            "She Blinded Me with Science - Thomas Dolby", "Money for Nothing - Dire Straits",
+            "Raspberry Beret - Prince", "Lost in Emotion - Lisa Lisa & Cult Jam", "Eternal Flame - The Bangles",
+            "If I Could Turn Back Time - Cher", "Got My Mind Set on You - George Harrison",
+            "Simply Irresistible - Robert Palmer", "September - Earth, Wind & Fire", "Sweet Caroline - Neil Diamond",
+            "Jump Around - House of Pain", "Tearin' Up My Heart - *NSYNC", "Yellow - Coldplay",
+            "I Believe in a Thing Called Love - The Darkness", "Shut Up and Dance - Walk the Moon",
+            "Can't Stop the Feeling! - Justin Timberlake", "Mr. Saxobeat - Alexandra Stan", "Seven Rings - Ariana Grande",
+            "Kill Bill - SZA", "Anti-Hero - Taylor Swift", "Rich Flex - Drake & 21 Savage",
+            "American Pie - Don McLean", "Heart of Glass - Blondie"
+        ];
+        
+        // Removed SONG_DATA and processSongList as they are no longer needed
+        
+        // --- Configuration for 4x4 Bingo Cards ---
+        const CARD_COUNT = 6; // Fixed number of cards as requested
+        const CARD_SIZE = 15; // Number of unique songs required on the card (15 songs + 1 free space = 16 cells)
+        const FREE_SPACE_INDEX = 7; // Center of a 4x4 grid (0-indexed: index 7 is 8th cell)
+
+        /*
+         * --- BINGO GENERATION FUNCTIONS (Simplified) ---
+         */
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        /**
+         * Converts the RAW_SONG_LIST into the structured format required by the generator.
+         * Since there are no categories, it just flattens the list.
+         */
+        function getMainMix() {
+            return RAW_SONG_LIST.map(item => {
+                const parts = item.split(' - ');
+                const title = parts[0].trim();
+                const artist = parts[1] ? parts[1].trim() : 'Unknown Artist';
+                return {
+                    title: title,
+                    artist: artist,
+                    full_name: `${title} - ${artist}`
+                };
+            });
+        }
+
+        function generateBingoCards() {
+            const availableSongs = getMainMix();
+            
+            // Safety Check: Needs enough songs (CARD_SIZE * CARD_COUNT)
+            const requiredSongs = CARD_SIZE * CARD_COUNT;
+            
+            if (availableSongs.length < requiredSongs) {
+                alert(`Error: The main mix only has ${availableSongs.length} unique songs, but you need ${requiredSongs} to generate ${CARD_COUNT} unique 4x4 cards. Please add more songs to the RAW_SONG_LIST.`);
+                return;
+            }
+            
+            const cardContainer = document.getElementById('card-container');
+            const playlistOutput = document.getElementById('playlist-output');
+            cardContainer.innerHTML = '';
+            playlistOutput.innerHTML = '';
+
+            // 1. Shuffle and slice the exact number of unique songs needed for all 6 cards
+            const shuffledSongs = shuffleArray([...availableSongs]);
+            const songsOnCards = shuffledSongs.slice(0, requiredSongs); 
+
+            // 2. The master playlist is simply the set of songs chosen for the cards, then shuffled.
+            const masterPlaylist = shuffleArray([...songsOnCards]);
+
+            for (let i = 0; i < CARD_COUNT; i++) {
+                // 3. Take the unique slice for this specific card
+                const start = i * CARD_SIZE;
+                const end = (i + 1) * CARD_SIZE;
+                
+                const cardSongsSegment = songsOnCards.slice(start, end); 
+
+                // 4. Randomize the song positions *within* this card's set
+                const cardSongs = shuffleArray(cardSongsSegment); 
+                
+                // Insert free space at the center position (index 7 of 16 total cells)
+                cardSongs.splice(FREE_SPACE_INDEX, 0, { full_name: "🎶 FREE SPACE 🎶", isFree: true });
+
+                const card = document.createElement('div');
+                card.className = 'bingo-card';
+                
+                const title = document.createElement('div');
+                title.className = 'card-title';
+                title.textContent = `MAIN MIX BINGO CARD #${i + 1}`; // Fixed title
+                card.appendChild(title);
+
+                const grid = document.createElement('div');
+                grid.className = 'card-grid';
+                
+                cardSongs.forEach(song => {
+                    const cell = document.createElement('div');
+                    cell.className = 'card-cell';
+                    cell.textContent = song.isFree ? song.full_name : song.full_name; 
+                    if (song.isFree) {
+                        cell.classList.add('free-space');
+                    }
+                    grid.appendChild(cell);
+                });
+
+                card.appendChild(grid);
+                cardContainer.appendChild(card);
+            }
+
+            // Output the Master Playlist
+            masterPlaylist.forEach(song => {
+                const listItem = document.createElement('li');
+                listItem.textContent = song.full_name;
+                playlistOutput.appendChild(listItem);
+            });
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Generate initial cards using the default mix
+            generateBingoCards();
+
+            // 2. Attach event listener to the main generate button
+            document.getElementById('generate-button').addEventListener('click', generateBingoCards);
+        });
+    </script>
+</body>
+</html>
